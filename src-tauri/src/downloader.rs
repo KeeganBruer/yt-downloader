@@ -7,6 +7,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::io::{AsyncBufReadExt, BufReader};
 
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
 // ── Public types shared with commands ────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -112,11 +115,11 @@ pub async fn get_video_info(url: &str, ytdlp: &Path) -> Result<VideoInfoResponse
 }
 
 async fn get_single_video_info(url: &str, ytdlp: &Path) -> Result<VideoInfoResponse, String> {
-    let output = tokio::process::Command::new(ytdlp)
-        .args(["--dump-json", "--no-playlist", "--no-warnings", url])
-        .output()
-        .await
-        .map_err(|e| format!("Failed to run yt-dlp: {e}"))?;
+    let mut cmd = tokio::process::Command::new(ytdlp);
+    cmd.args(["--dump-json", "--no-playlist", "--no-warnings", url]);
+    #[cfg(target_os = "windows")]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    let output = cmd.output().await.map_err(|e| format!("Failed to run yt-dlp: {e}"))?;
 
     if !output.status.success() {
         let err = String::from_utf8_lossy(&output.stderr);
@@ -170,16 +173,11 @@ async fn get_single_video_info(url: &str, ytdlp: &Path) -> Result<VideoInfoRespo
 }
 
 async fn get_playlist_info(url: &str, ytdlp: &Path) -> Result<VideoInfoResponse, String> {
-    let output = tokio::process::Command::new(ytdlp)
-        .args([
-            "--dump-json",
-            "--flat-playlist",
-            "--no-warnings",
-            url,
-        ])
-        .output()
-        .await
-        .map_err(|e| format!("Failed to run yt-dlp: {e}"))?;
+    let mut cmd = tokio::process::Command::new(ytdlp);
+    cmd.args(["--dump-json", "--flat-playlist", "--no-warnings", url]);
+    #[cfg(target_os = "windows")]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    let output = cmd.output().await.map_err(|e| format!("Failed to run yt-dlp: {e}"))?;
 
     if !output.status.success() {
         let err = String::from_utf8_lossy(&output.stderr);
@@ -312,14 +310,15 @@ async fn run_download(
     args.push("--progress".into());
     args.push(url.to_string());
 
-    let mut child = tokio::process::Command::new(ytdlp)
-        .args(&args)
+    let mut cmd = tokio::process::Command::new(ytdlp);
+    cmd.args(&args)
         .env("PYTHONUTF8", "1")
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .kill_on_drop(true)
-        .spawn()
-        .map_err(|e| format!("Failed to spawn yt-dlp: {e}"))?;
+        .kill_on_drop(true);
+    #[cfg(target_os = "windows")]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    let mut child = cmd.spawn().map_err(|e| format!("Failed to spawn yt-dlp: {e}"))?;
 
     let stdout = child.stdout.take().unwrap();
     let stderr = child.stderr.take().unwrap();
