@@ -21,4 +21,5 @@ This is essentially a user-friendly desktop wrapper for YT-DLP.
 # Tech Stack
 
 **Tauri / React Framework** Cross-platform desktop framework
+
 **YT-DLP** Bundled binary of yt-dlp for the actual downloading
