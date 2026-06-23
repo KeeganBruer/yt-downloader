@@ -3,5 +3,5 @@
 
 
 fn main() {
-    yt-downloader_lib::run()
+    yt_downloader_lib::run()
 }
