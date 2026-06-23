@@ -297,7 +297,7 @@ async fn run_download(
         args.push("bestaudio[ext=m4a]/bestaudio".into());
     } else {
         let ffmpeg_ok = crate::ffmpeg::check_ffmpeg();
-        let format = build_video_format(&params.resolution, ffmpeg_ok);
+        let format = build_video_format(&params.resolution, ffmpeg_ok, &params.container);
         args.push("-f".into());
         args.push(format);
 
@@ -485,13 +485,20 @@ fn unique_path(dir: &str, stem: &str, ext: &str) -> String {
     }
 }
 
-fn build_video_format(resolution: &str, ffmpeg_available: bool) -> String {
+fn build_video_format(resolution: &str, ffmpeg_available: bool, container: &str) -> String {
     if ffmpeg_available {
+        // For MP4, prefer m4a (AAC) audio — Opus-in-MP4 is not supported by most players.
+        // For MKV, any audio codec is fine.
+        let audio = if container == "mp4" {
+            "bestaudio[ext=m4a]"
+        } else {
+            "bestaudio"
+        };
         match resolution {
-            "best" => "bestvideo+bestaudio/best".to_string(),
+            "best" => format!("bestvideo+{audio}/bestvideo+bestaudio/best"),
             r => {
                 let h = r.trim_end_matches('p');
-                format!("bestvideo[height<={h}]+bestaudio/best[height<={h}]")
+                format!("bestvideo[height<={h}]+{audio}/bestvideo[height<={h}]+bestaudio/best[height<={h}]")
             }
         }
     } else {
