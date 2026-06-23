@@ -7,11 +7,8 @@ Provide a link to an individual youtube video or link to a full playlist of vide
 This is essentially a user-friendly desktop wrapper for YT-DLP.
 
 
-<span style="font-size:8px;">
+.<sub><sub> Youtube2MP4, Youtube2MP3, Youtube2MKV, Youtube Downloader, Youtube Playlist Downloader </sub></sub>
 
-Youtube2MP4, Youtube2MP3, Youtube2MKV, Youtube Downloader, Youtube Playlist Downloader
-
-</span>
 
 # Installers
 
