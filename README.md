@@ -1,7 +1,7 @@
-# Tauri + Vanilla TS
+# Youtube Downloader
 
-This template should help get you started developing with Tauri in vanilla HTML, CSS and Typescript.
 
-## Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+|  |  |
+| - | - |
+| Windows | [windows-x64-installer.exe](https://github.com/KeeganBruer/yt-downloader/releases/latest/download/youtubedwl_0.1.0_x64-setup.exe) |
+| Linux | Coming Soon |
