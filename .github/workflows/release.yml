@@ -40,13 +40,22 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build and publish release
+      - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rename installer to stable filename
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem "src-tauri/target/release/bundle/nsis/*_x64-setup.exe" | Select-Object -First 1
+          Copy-Item $installer.FullName "src-tauri/target/release/bundle/nsis/yt-downloader_x64-setup.exe"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: ${{ github.ref_name }}
-          releaseBody: 'See the assets below to download and install this version.'
-          releaseDraft: false
-          prerelease: false
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: src-tauri/target/release/bundle/nsis/yt-downloader_x64-setup.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
