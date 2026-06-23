@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube Downloader</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+  <body>
+    <!-- ffmpeg warning banner -->
+    <div id="banner" class="banner hidden">
+      <span>
+        ffmpeg not found — 1080p+, mp3, and mkv are unavailable.
+        Install ffmpeg and add it to your PATH, then restart the app.
+      </span>
+      <button id="banner-close" class="banner-close">&#x2715;</button>
+    </div>
+
+    <!-- URL input header -->
+    <header class="header">
+      <div class="url-bar-wrap" id="url-bar-wrap">
+        <svg class="url-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+        <input
+          id="url-input"
+          class="url-input"
+          type="text"
+          placeholder="Paste a YouTube URL or playlist link and press Enter…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <div id="url-spinner" class="url-spinner hidden"></div>
+      </div>
+      <p id="url-error" class="url-error-msg hidden"></p>
+    </header>
+
+    <!-- Queue toolbar -->
+    <div id="queue-toolbar" class="queue-toolbar hidden">
+      <span id="queue-count" class="queue-count"></span>
+      <button id="retry-btn" class="toolbar-btn hidden">Retry failed</button>
+      <div class="clear-wrap" id="clear-wrap">
+        <button id="clear-btn" class="toolbar-btn clear-btn">Clear</button>
+        <div id="clear-menu" class="clear-menu hidden">
+          <button id="clear-completed-btn" class="clear-menu-item">Clear completed</button>
+          <button id="clear-all-btn" class="clear-menu-item clear-menu-item--danger">Stop &amp; clear all</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Download queue -->
+    <main class="queue" id="queue">
+      <div class="queue-empty" id="queue-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <p>Paste a YouTube URL above to start downloading</p>
+      </div>
+    </main>
+
+    <!-- Video vs playlist disambiguation -->
+    <div id="disambig-overlay" class="popover-overlay hidden">
+      <div class="disambig">
+        <p class="disambig-prompt">This URL includes a playlist. What would you like to download?</p>
+        <div class="disambig-choices">
+          <button id="disambig-video-btn" class="disambig-choice">
+            <strong>This video</strong>
+            <span>Download only the current video</span>
+          </button>
+          <button id="disambig-playlist-btn" class="disambig-choice">
+            <strong>Entire playlist</strong>
+            <span>Download all videos in the playlist</span>
+          </button>
+        </div>
+        <button id="disambig-cancel" class="btn-secondary">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Download options popover -->
+    <div id="popover-overlay" class="popover-overlay hidden">
+      <div class="popover" role="dialog" aria-modal="true">
+        <div class="popover-header">
+          <img id="popover-thumb" class="popover-thumb" src="" alt="" />
+          <div class="popover-meta">
+            <input id="popover-title" class="popover-title" type="text" spellcheck="false" autocomplete="off" />
+            <span id="popover-subtitle" class="popover-subtitle"></span>
+          </div>
+          <button id="popover-close" class="popover-close" aria-label="Close">&#x2715;</button>
+        </div>
+
+        <div class="popover-body">
+          <!-- Output type -->
+          <div class="field-row">
+            <label class="field-label">Output</label>
+            <div class="toggle-group" id="output-type-toggle">
+              <button class="toggle-btn active" data-value="video">Video</button>
+              <button class="toggle-btn" data-value="audio">Audio</button>
+            </div>
+          </div>
+
+          <!-- Resolution (video only) -->
+          <div class="field-row" id="resolution-row">
+            <label class="field-label" for="resolution-select">Resolution</label>
+            <select id="resolution-select" class="field-select"></select>
+          </div>
+
+          <!-- Container (video only) -->
+          <div class="field-row" id="container-row">
+            <label class="field-label">Container</label>
+            <div class="toggle-group" id="container-toggle">
+              <button class="toggle-btn active" data-value="mp4">mp4</button>
+              <button class="toggle-btn" data-value="mkv">mkv</button>
+            </div>
+          </div>
+
+          <!-- Audio format (audio only) -->
+          <div class="field-row hidden" id="audio-format-row">
+            <label class="field-label">Format</label>
+            <div class="toggle-group" id="audio-format-toggle">
+              <button class="toggle-btn active" data-value="m4a">m4a</button>
+              <button class="toggle-btn" data-value="mp3">mp3</button>
+            </div>
+          </div>
+
+          <!-- Playlist index (playlist only) -->
+          <div class="field-row hidden" id="index-row">
+            <label class="field-label"></label>
+            <label class="field-check-label">
+              <input type="checkbox" id="prepend-index-check" class="field-check" />
+              Prepend playlist index <span class="field-check-hint">(001 - Title)</span>
+            </label>
+          </div>
+
+          <!-- Output folder -->
+          <div class="field-row">
+            <label class="field-label">Save to</label>
+            <div class="folder-row">
+              <input id="output-path" class="field-input folder-input" type="text" readonly />
+              <button id="browse-btn" class="browse-btn">Browse</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="popover-footer">
+          <button id="cancel-popover-btn" class="btn-secondary">Cancel</button>
+          <button id="add-queue-btn" class="btn-primary">Add to Queue</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
